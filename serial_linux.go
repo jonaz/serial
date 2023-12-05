@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 package serial
@@ -140,6 +141,17 @@ func (p *Port) Read(b []byte) (n int, err error) {
 
 func (p *Port) Write(b []byte) (n int, err error) {
 	return p.f.Write(b)
+}
+func (p *Port) SetWriteDeadline(t time.Time) (err error) {
+	return p.f.SetWriteDeadline(t)
+}
+
+func (p *Port) SetDeadline(t time.Time) (err error) {
+	return p.f.SetDeadline(t)
+}
+
+func (p *Port) SetReadDeadline(t time.Time) (err error) {
+	return p.f.SetReadDeadline(t)
 }
 
 // Discards data written to the port but not transmitted,
