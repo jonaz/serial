@@ -122,7 +122,8 @@ func openPort(name string, baud int, databits byte, parity Parity, stopbits Stop
 		return nil, errno
 	}
 
-	if err = unix.SetNonblock(int(fd), false); err != nil {
+	// Have to set non block to true otherwise SetReadDeadline functions does not work on the port.
+	if err = unix.SetNonblock(int(fd), true); err != nil {
 		return
 	}
 
