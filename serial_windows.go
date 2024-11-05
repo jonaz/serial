@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 package serial
@@ -37,18 +38,27 @@ type structTimeouts struct {
 	WriteTotalTimeoutConstant   uint32
 }
 
-func openPort(name string, baud int, databits byte, parity Parity, stopbits StopBits, readTimeout time.Duration) (p *Port, err error) {
+func openPort(
+	name string,
+	baud int,
+	databits byte,
+	parity Parity,
+	stopbits StopBits,
+	readTimeout time.Duration,
+) (p *Port, err error) {
 	if len(name) > 0 && name[0] != '\\' {
 		name = "\\\\.\\" + name
 	}
 
-	h, err := syscall.CreateFile(syscall.StringToUTF16Ptr(name),
+	h, err := syscall.CreateFile(
+		syscall.StringToUTF16Ptr(name),
 		syscall.GENERIC_READ|syscall.GENERIC_WRITE,
 		0,
 		nil,
 		syscall.OPEN_EXISTING,
 		syscall.FILE_ATTRIBUTE_NORMAL|syscall.FILE_FLAG_OVERLAPPED,
-		0)
+		0,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +116,10 @@ func (p *Port) Write(buf []byte) (int, error) {
 		return int(n), err
 	}
 	return getOverlappedResult(p.fd, p.wo)
+}
+
+func (p *Port) SetReadDeadline(t time.Time) (err error) {
+	return p.f.SetReadDeadline(t)
 }
 
 func (p *Port) Read(buf []byte) (int, error) {
@@ -295,8 +309,10 @@ func purgeComm(h syscall.Handle) error {
 	const PURGE_RXABORT = 0x0002
 	const PURGE_TXCLEAR = 0x0004
 	const PURGE_RXCLEAR = 0x0008
-	r, _, err := syscall.Syscall(nPurgeComm, 2, uintptr(h),
-		PURGE_TXABORT|PURGE_RXABORT|PURGE_TXCLEAR|PURGE_RXCLEAR, 0)
+	r, _, err := syscall.Syscall(
+		nPurgeComm, 2, uintptr(h),
+		PURGE_TXABORT|PURGE_RXABORT|PURGE_TXCLEAR|PURGE_RXCLEAR, 0,
+	)
 	if r == 0 {
 		return err
 	}
@@ -315,10 +331,12 @@ func newOverlapped() (*syscall.Overlapped, error) {
 
 func getOverlappedResult(h syscall.Handle, overlapped *syscall.Overlapped) (int, error) {
 	var n int
-	r, _, err := syscall.Syscall6(nGetOverlappedResult, 4,
+	r, _, err := syscall.Syscall6(
+		nGetOverlappedResult, 4,
 		uintptr(h),
 		uintptr(unsafe.Pointer(overlapped)),
-		uintptr(unsafe.Pointer(&n)), 1, 0, 0)
+		uintptr(unsafe.Pointer(&n)), 1, 0, 0,
+	)
 	if r == 0 {
 		return n, err
 	}
