@@ -1,3 +1,4 @@
+//go:build !windows && !linux && cgo
 // +build !windows,!linux,cgo
 
 package serial
@@ -17,7 +18,14 @@ import (
 	//"unsafe"
 )
 
-func openPort(name string, baud int, databits byte, parity Parity, stopbits StopBits, readTimeout time.Duration) (p *Port, err error) {
+func openPort(
+	name string,
+	baud int,
+	databits byte,
+	parity Parity,
+	stopbits StopBits,
+	readTimeout time.Duration,
+) (p *Port, err error) {
 	f, err := os.OpenFile(name, syscall.O_RDWR|syscall.O_NOCTTY|syscall.O_NONBLOCK, 0666)
 	if err != nil {
 		return
@@ -146,10 +154,12 @@ func openPort(name string, baud int, databits byte, parity Parity, stopbits Stop
 	}
 
 	//fmt.Println("Tweaking", name)
-	r1, _, e := syscall.Syscall(syscall.SYS_FCNTL,
+	r1, _, e := syscall.Syscall(
+		syscall.SYS_FCNTL,
 		uintptr(f.Fd()),
 		uintptr(syscall.F_SETFL),
-		uintptr(0))
+		uintptr(0),
+	)
 	if e != 0 || r1 != 0 {
 		s := fmt.Sprint("Clearing NONBLOCK syscall error:", e, r1)
 		f.Close()
@@ -183,6 +193,10 @@ func (p *Port) Read(b []byte) (n int, err error) {
 
 func (p *Port) Write(b []byte) (n int, err error) {
 	return p.f.Write(b)
+}
+
+func (p *Port) SetReadDeadline(t time.Time) (err error) {
+	return p.f.SetReadDeadline(t)
 }
 
 // Discards data written to the port but not transmitted,
